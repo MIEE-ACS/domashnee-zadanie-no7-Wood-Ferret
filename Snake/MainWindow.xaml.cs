@@ -1,16 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace Snake
@@ -32,6 +26,8 @@ namespace Snake
         int score;
         //таймер по которому 
         DispatcherTimer moveTimer;
+
+        bool twoLive = false;
         
         //конструктор формы, выполняется при запуске программы
         public MainWindow()
@@ -70,32 +66,62 @@ namespace Snake
         //обработчик тика таймера. Все движение происходит здесь
         void moveTimer_Tick(object sender, EventArgs e)
         {
-            //в обратном порядке двигаем все элементы змеи
-            foreach (var p in Enumerable.Reverse(snake))
+            int headx = head.x;
+            int heady = head.y;
+
+            switch (head.direction)
             {
-                p.move();
+                case Head.Direction.DOWN:
+                    heady += 40;
+                    break;
+                case Head.Direction.UP:
+                    heady -= 40;
+                    break;
+                case Head.Direction.LEFT:
+                    headx -= 40;
+                    break;
+                case Head.Direction.RIGHT:
+                    headx += 40;
+                    break;
             }
 
-            //проверяем, что голова змеи не врезалась в тело
             foreach (var p in snake.Where(x => x != head))
             {
                 //если координаты головы и какой либо из частей тела совпадают
-                if (p.x == head.x && p.y == head.y)
+                if (p.x == headx && p.y == heady)
                 {
+                    if (score >= 5)
+                    {
+                        score -= 5;
+                        twoLive = true;
+                        moveTimer.Stop();
+                        return;
+                    }
                     //мы проиграли
                     moveTimer.Stop();
                     tbGameOver.Visibility = Visibility.Visible;
                     return;
                 }
             }
-
-            //проверяем, что голова змеи не вышла за пределы поля
-            if (head.x < 40 || head.x >= 540 || head.y < 40 || head.y >= 540)
+            if (headx < 40 || headx >= 540 || heady < 40 || heady >= 540)
             {
+                if (score >= 5)
+                {
+                    score -= 5;
+                    twoLive = true;
+                    moveTimer.Stop();
+                    return;
+                }
                 //мы проиграли
                 moveTimer.Stop();
                 tbGameOver.Visibility = Visibility.Visible;
                 return;
+            }
+
+            //в обратном порядке двигаем все элементы змеи
+            foreach (var p in Enumerable.Reverse(snake))
+            {
+                p.move();
             }
 
             //проверяем, что голова змеи врезалась в яблоко
@@ -131,6 +157,13 @@ namespace Snake
                 case Key.Right:
                     head.direction = Head.Direction.RIGHT;
                     break;
+            }
+            if(twoLive &&
+                (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Right || e.Key == Key.Left))
+            {
+                twoLive = false;
+                moveTimer.Start();
+                UpdateField();
             }
         }
 
@@ -275,6 +308,7 @@ namespace Snake
                     RotateTransform rotateTransform = new RotateTransform(90 * (int)value);
                     image.RenderTransform = rotateTransform;
                 }
+                get { return m_direction; }
             }
 
             public Head()
@@ -301,6 +335,7 @@ namespace Snake
                         x += 40;
                         break;
                 }
+
             }
         }
 
